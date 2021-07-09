@@ -16,7 +16,7 @@
         :key="detail"
       >
         <el-image
-          style="width: 300px;"
+          style="max-width: 90%;"
           :src="detail"
           :preview-src-list="shop.details"
         >

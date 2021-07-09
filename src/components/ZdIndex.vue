@@ -62,7 +62,6 @@
             class="avatar-uploader"
             :show-file-list="false"
             :on-success="handleLogoSuccess"
-            :before-upload="beforeUploadImg"
             :http-request="uploadImg"
           >
             <img
@@ -79,7 +78,6 @@
             list-type="picture-card"
             :on-remove="handleRemoveDetail"
             :on-success="handleDetailSuccess"
-            :before-upload="beforeUploadImg"
             :http-request="uploadImg"
           >
             <i class="el-icon-plus"></i>
@@ -100,6 +98,7 @@
 </template>
 
 <script>
+import Compressor from "compressorjs";
 export default {
   name: "ZdIndex",
   data() {
@@ -223,27 +222,25 @@ export default {
       const isLt2M = file.size / 1024 / 1024 < 2;
 
       if (!isLt2M) {
-        this.$message.error("上传头像图片大小不能超过 2MB!");
+        this.$message.error("上传图片大小不能超过 2MB!");
       }
       return isLt2M;
     },
-    uploadImg(options) {
+    async uploadImg(options) {
       const cloudPath = `zhoudian/logo/${Date.now()}${options.file.name.substr(
         options.file.name.lastIndexOf(".")
       )}`;
-      return this.cloud
-        .uploadFile({
-          cloudPath,
-          filePath: options.file,
-        })
-        .then((res) => {
-          if (res.code) {
-            return Promise.reject(res);
-          }
-          return {
-            url: res.fileID,
-          };
-        });
+      const file = await this.compress(options.file);
+      const res = await this.cloud.uploadFile({
+        cloudPath,
+        filePath: file,
+      });
+      if (res.code) {
+        throw new Error(res);
+      }
+      return {
+        url: res.fileID,
+      };
     },
     handleRemoveDetail(file, fileList) {
       this.uploadForm.details = fileList.map((item) => {
@@ -272,6 +269,16 @@ export default {
       } finally {
         this.submitLoading = false;
       }
+    },
+    compress(file) {
+      return new Promise((resolve, reject) => {
+        new Compressor(file, {
+          quality: 0.6,
+          maxWidth: 500,
+          success: resolve,
+          error: reject,
+        });
+      });
     },
   },
 };
