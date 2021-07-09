@@ -31,7 +31,7 @@
               {{ shop.name }}
             </div>
             <div class="shop-position">
-              {{ shop.position }}
+              {{ shop.position.longitude + ", " + shop.position.latitude }}
             </div>
           </div>
         </div>
