@@ -1,0 +1,22 @@
+{
+    "name": "门店表",
+    "desc": "存储用户上传的门店信息",
+    "auth": "所有用户可读，仅创建者可写",
+    "index": [
+        "+_id",
+        "+position"
+    ],
+    "example": {
+        "_id": "shop_1",
+        "name": "黄焖鸡米饭",
+        "logo": "http://image.cdn.com/zhoudian/shop/logo/shop_1.png",
+        "position": [
+            "经度",
+            "纬度"
+        ],
+        "details": [
+            "http://image.cdn.com/zhoudian/shop/detail/shop_1_1.png",
+            "http://image.cdn.com/zhoudian/shop/detail/shop_1_2.png"
+        ]
+    }
+}
