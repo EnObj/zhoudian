@@ -335,11 +335,11 @@ export default {
         this.submitLoading = false;
       }
     },
+    // 本地压缩用户选择的图片，最大宽度：1000像素
     compress(file) {
       return new Promise((resolve, reject) => {
         new Compressor(file, {
-          quality: 0.6,
-          maxWidth: 500,
+          maxWidth: 1000,
           success: resolve,
           error: reject,
         });
