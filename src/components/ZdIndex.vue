@@ -38,9 +38,7 @@
         暂无数据
       </div>
       <div class="more" v-if="shopsLoaded && moreShops">
-        <el-button type="text" @click="refreshShops(shops)"
-          >加载更多</el-button
-        >
+        <el-button type="text" @click="refreshShops(shops)">加载更多</el-button>
       </div>
     </div>
     <el-dialog title="上传门店" :visible.sync="showUploadDialog" width="350px">
@@ -105,6 +103,10 @@
 
 <script>
 import Compressor from "compressorjs";
+function aaa() {
+  console.log("aaa");
+}
+aaa();
 export default {
   name: "ZdIndex",
   data() {
@@ -240,7 +242,7 @@ export default {
       async function success(position) {
         const userLocation = position.coords;
         const res = await fetch(
-          `https://apis.map.qq.com/ws/geocoder/v1/?key=RFGBZ-IMPLX-BVW4P-TOS7W-77DQ7-BIBTD&location=${userLocation.latitude},${userLocation.longitude}`
+          `https://service-f1b28zc3-1252108641.sh.apigw.tencentcs.com/release/geo-to-city?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`
         );
         userLocation.desc = await res.json();
         _this.userLocation = userLocation;
