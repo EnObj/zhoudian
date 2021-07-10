@@ -37,6 +37,11 @@
       <div class="empty" v-if="shopsLoaded && !shops.length">
         暂无数据
       </div>
+      <div class="more" v-if="shopsLoaded && moreShops">
+        <el-button type="text" @click="refreshShops(shops)"
+          >加载更多</el-button
+        >
+      </div>
     </div>
     <el-dialog title="上传门店" :visible.sync="showUploadDialog" width="350px">
       <el-form
@@ -105,7 +110,7 @@ export default {
   data() {
     return {
       userLocation: {
-        latitude: 43,
+        latitude: 42,
         longitude: 113,
         desc: {
           address: "郑州市郑东新区会展中心",
@@ -114,6 +119,7 @@ export default {
       locating: false, // 正在定位用户位置
       shops: [],
       shopsLoaded: false,
+      moreShops: false,
       showUploadDialog: false,
       uploadForm: {
         name: "",
@@ -169,9 +175,10 @@ export default {
     this.refreshShops();
   },
   methods: {
-    async refreshShops() {
+    async refreshShops(pagedShops = []) {
       const loading = this.$loading();
       const db = this.cloud.database();
+      const pageSize = 20;
       try {
         const { data: shops } = await db
           .collection("zd_shop")
@@ -185,8 +192,10 @@ export default {
               minDistance: 0,
             }),
           })
+          .skip(pagedShops.length)
+          .limit(pageSize)
           .get();
-        if(shops.length){
+        if (shops.length) {
           // 换取logo地址
           const { fileList } = await this.cloud.getTempFileURL({
             fileList: shops.map((shop) => shop.logo),
@@ -205,8 +214,9 @@ export default {
             ]);
           });
         }
-        this.shops = shops;
+        this.shops = pagedShops.concat(shops);
         this.shopsLoaded = true;
+        this.moreShops = shops.length == pageSize;
       } catch (error) {
         console.error(error);
         this.$notify({
@@ -336,6 +346,10 @@ export default {
   margin: 100px 0;
   color: gray;
   font-size: 14px;
+}
+.more {
+  text-align: center;
+  margin: 15px 0;
 }
 .shop {
   display: flex;
