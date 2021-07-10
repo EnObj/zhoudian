@@ -105,7 +105,7 @@ export default {
   data() {
     return {
       userLocation: {
-        latitude: 42,
+        latitude: 43,
         longitude: 113,
         desc: {
           address: "郑州市郑东新区会展中心",
@@ -186,23 +186,25 @@ export default {
             }),
           })
           .get();
-        // 换取logo地址
-        const { fileList } = await this.cloud.getTempFileURL({
-          fileList: shops.map((shop) => shop.logo),
-        });
-        fileList.forEach((file, index) => {
-          shops[index].logo = file.tempFileURL;
-        });
-        // 计算位置
-        shops.forEach((shop) => {
-          shop.distance = TMap.geometry.computeDistance([
-            new TMap.LatLng(
-              this.userLocation.latitude,
-              this.userLocation.longitude
-            ),
-            new TMap.LatLng(shop.position.latitude, shop.position.longitude),
-          ]);
-        });
+        if(shops.length){
+          // 换取logo地址
+          const { fileList } = await this.cloud.getTempFileURL({
+            fileList: shops.map((shop) => shop.logo),
+          });
+          fileList.forEach((file, index) => {
+            shops[index].logo = file.tempFileURL;
+          });
+          // 计算位置
+          shops.forEach((shop) => {
+            shop.distance = TMap.geometry.computeDistance([
+              new TMap.LatLng(
+                this.userLocation.latitude,
+                this.userLocation.longitude
+              ),
+              new TMap.LatLng(shop.position.latitude, shop.position.longitude),
+            ]);
+          });
+        }
         this.shops = shops;
         this.shopsLoaded = true;
       } catch (error) {
@@ -331,7 +333,7 @@ export default {
 }
 .empty {
   text-align: center;
-  margin: 50px 0;
+  margin: 100px 0;
   color: gray;
   font-size: 14px;
 }
