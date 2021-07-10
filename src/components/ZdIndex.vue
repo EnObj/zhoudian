@@ -11,6 +11,7 @@
           icon="el-icon-plus"
           @click="newShop"
           size="small"
+          :disabled="!userLocation || locating"
           >上传</el-button
         >
       </div>
@@ -30,7 +31,7 @@
             <div class="shop-name">
               {{ shop.name }}
             </div>
-            <div class="shop-position">距离我{{ shop.distance }}m</div>
+            <div class="shop-position">距离我{{ shop.distance }}米</div>
           </div>
         </div>
       </div>
@@ -111,13 +112,7 @@ export default {
   name: "ZdIndex",
   data() {
     return {
-      userLocation: {
-        latitude: 42,
-        longitude: 113,
-        desc: {
-          address: "郑州市郑东新区会展中心",
-        },
-      }, // 用户位置
+      userLocation: null, // 用户位置
       locating: false, // 正在定位用户位置
       shops: [],
       shopsLoaded: false,
@@ -156,12 +151,13 @@ export default {
       if (!this.userLocation) {
         return "点击获取定位";
       }
-      return this.userLocation.desc.address;
+      return this.userLocation.address;
     },
   },
   watch: {
     userLocation: {
       async handler(userLocation) {
+        console.log(userLocation);
         localStorage.setItem("zd_user_location", JSON.stringify(userLocation));
         this.refreshShops();
       },
@@ -170,16 +166,21 @@ export default {
   },
   async created() {
     // 从本地缓存加载用户位置
-    const userLocationJson = localStorage.getItem("zd_user_location");
-    if (userLocationJson) {
-      this.userLocation = JSON.parse(userLocationJson);
+    const userLocation = JSON.parse(
+      localStorage.getItem("zd_user_location") || "{}"
+    );
+    if (userLocation.latitude && userLocation.longitude) {
+      this.userLocation = userLocation;
+    } else {
+      this.geoFindMe();
     }
-    this.refreshShops();
   },
   methods: {
+    // 刷新门店列表
     async refreshShops(pagedShops = []) {
       const loading = this.$loading();
       const db = this.cloud.database();
+      // 分页
       const pageSize = 20;
       try {
         const { data: shops } = await db
@@ -197,6 +198,7 @@ export default {
           .skip(pagedShops.length)
           .limit(pageSize)
           .get();
+        // 一些map处理
         if (shops.length) {
           // 换取logo地址
           const { fileList } = await this.cloud.getTempFileURL({
@@ -205,7 +207,7 @@ export default {
           fileList.forEach((file, index) => {
             shops[index].logo = file.tempFileURL;
           });
-          // 计算位置
+          // 计算门店距离用户定位的距离（米）
           shops.forEach((shop) => {
             shop.distance = TMap.geometry.computeDistance([
               new TMap.LatLng(
@@ -213,7 +215,7 @@ export default {
                 this.userLocation.longitude
               ),
               new TMap.LatLng(shop.position.latitude, shop.position.longitude),
-            ]);
+            ]).toFixed();
           });
         }
         this.shops = pagedShops.concat(shops);
@@ -241,12 +243,22 @@ export default {
 
       async function success(position) {
         const userLocation = position.coords;
-        const res = await fetch(
-          `https://service-f1b28zc3-1252108641.sh.apigw.tencentcs.com/release/geo-to-city?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`
-        );
-        userLocation.desc = await res.json();
-        _this.userLocation = userLocation;
-        _this.locating = false;
+        try {
+          const res = await fetch(
+            `https://service-f1b28zc3-1252108641.sh.apigw.tencentcs.com/release/geo-to-city?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`
+          );
+          const { data } = await res.json();
+          userLocation.address = data.result.address;
+          _this.userLocation = userLocation;
+        } catch (error) {
+          console.error(error);
+          _this.$notify({
+            message: error.message,
+            type: "error",
+          });
+        } finally {
+          _this.locating = false;
+        }
       }
 
       function error() {
@@ -372,6 +384,10 @@ export default {
 }
 .shop-name {
   font-size: 18px;
+}
+.shop-position{
+  font-size: 14px;
+  color: gray;
 }
 .map {
   width: 300px;
