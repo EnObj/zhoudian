@@ -166,12 +166,21 @@ export default {
   },
   async created() {
     // 从本地缓存加载用户位置
+    // const defaultUserLocation = {
+    //   latitude: 42,
+    //   longitude: 113,
+    //   address: "郑州是金水区杨金路",
+    // };
+    const defaultUserLocation = "{}";
     const userLocation = JSON.parse(
-      localStorage.getItem("zd_user_location") || "{}"
+      localStorage.getItem("zd_user_location") ||
+        JSON.stringify(defaultUserLocation)
     );
     if (userLocation.latitude && userLocation.longitude) {
       this.userLocation = userLocation;
-    } else {
+    }
+    // 位置为空，请求用户授权位置
+    if (!this.userLocation) {
       this.geoFindMe();
     }
   },
@@ -209,13 +218,18 @@ export default {
           });
           // 计算门店距离用户定位的距离（米）
           shops.forEach((shop) => {
-            shop.distance = TMap.geometry.computeDistance([
-              new TMap.LatLng(
-                this.userLocation.latitude,
-                this.userLocation.longitude
-              ),
-              new TMap.LatLng(shop.position.latitude, shop.position.longitude),
-            ]).toFixed();
+            shop.distance = TMap.geometry
+              .computeDistance([
+                new TMap.LatLng(
+                  this.userLocation.latitude,
+                  this.userLocation.longitude
+                ),
+                new TMap.LatLng(
+                  shop.position.latitude,
+                  shop.position.longitude
+                ),
+              ])
+              .toFixed();
           });
         }
         this.shops = pagedShops.concat(shops);
@@ -385,7 +399,7 @@ export default {
 .shop-name {
   font-size: 18px;
 }
-.shop-position{
+.shop-position {
   font-size: 14px;
   color: gray;
 }
