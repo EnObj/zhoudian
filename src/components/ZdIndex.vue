@@ -81,11 +81,13 @@
           <el-upload
             action="https://enobj.cn"
             list-type="picture-card"
+            class="avatar-uploader"
             :on-remove="handleRemoveDetail"
             :on-success="handleDetailSuccess"
             :http-request="uploadImg"
+            :limit="10"
           >
-            <i class="el-icon-plus"></i>
+            <i class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-form-item>
         <el-form-item>
@@ -422,14 +424,23 @@ export default {
 .avatar-uploader-icon {
   font-size: 28px;
   color: #8c939d;
-  width: 148px;
-  height: 148px;
-  line-height: 148px;
+  width: 58px;
+  height: 58px;
+  line-height: 58px;
   text-align: center;
 }
 .avatar {
-  width: 148px;
-  height: 148px;
+  width: 58px;
+  height: 58px;
   display: block;
+}
+.el-upload--picture-card {
+  width: 58px;
+  height: 58px;
+  line-height: 58px;
+}
+.el-upload-list--picture-card .el-upload-list__item{
+  width: 58px;
+  height: 58px;
 }
 </style>
