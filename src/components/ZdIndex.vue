@@ -106,10 +106,6 @@
 
 <script>
 import Compressor from "compressorjs";
-function aaa() {
-  console.log("aaa");
-}
-aaa();
 export default {
   name: "ZdIndex",
   data() {
@@ -387,6 +383,7 @@ export default {
   margin-bottom: 10px;
   box-shadow: #8c939d 0px 0px 5px;
   padding: 10px;
+  border-radius: 5px;
 }
 .shop-logo-image {
   width: 60px;

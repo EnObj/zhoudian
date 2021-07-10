@@ -16,6 +16,9 @@
         </el-image>
       </div>
     </div>
+    <div class="shop-distance" v-if="shopDistance">
+      距离我{{ shopDistance }}米
+    </div>
   </div>
 </template>
 
@@ -28,6 +31,7 @@ export default {
   data() {
     return {
       shop: null,
+      userLocation: null, // 用户位置
     };
   },
   computed: {
@@ -36,6 +40,23 @@ export default {
         return [this.shop.logo, ...this.shop.details];
       }
       return [];
+    },
+    shopDistance() {
+      if (this.userLocation && this.shop) {
+        return TMap.geometry
+          .computeDistance([
+            new TMap.LatLng(
+              this.userLocation.latitude,
+              this.userLocation.longitude
+            ),
+            new TMap.LatLng(
+              this.shop.position.latitude,
+              this.shop.position.longitude
+            ),
+          ])
+          .toFixed();
+      }
+      return "";
     },
   },
   async created() {
@@ -65,6 +86,15 @@ export default {
     } finally {
       loading.close();
     }
+    // 获取用户位置
+    const defaultUserLocation = "{}";
+    const userLocation = JSON.parse(
+      localStorage.getItem("zd_user_location") ||
+        JSON.stringify(defaultUserLocation)
+    );
+    if (userLocation.latitude && userLocation.longitude) {
+      this.userLocation = userLocation;
+    }
   },
 };
 </script>
@@ -93,16 +123,22 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   grid-gap: 10px;
 }
-.shop-detail{
+.shop-detail {
   position: relative;
   padding: 50%;
 }
-.detail-image{
+.detail-image {
   display: block;
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+.shop-distance {
+  text-align: center;
+  margin: 20px 0;
+  color: gray;
+  font-size: 14px;
 }
 </style>
