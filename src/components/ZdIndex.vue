@@ -30,11 +30,12 @@
             <div class="shop-name">
               {{ shop.name }}
             </div>
-            <div class="shop-position">
-              {{ shop.position.longitude + ", " + shop.position.latitude }}
-            </div>
+            <div class="shop-position">距离我{{ shop.distance }}m</div>
           </div>
         </div>
+      </div>
+      <div class="empty" v-if="shopsLoaded && !shops.length">
+        暂无数据
       </div>
     </div>
     <el-dialog title="上传门店" :visible.sync="showUploadDialog" width="350px">
@@ -103,9 +104,16 @@ export default {
   name: "ZdIndex",
   data() {
     return {
-      userLocation: { latitude: 42, longitude: 113 }, // 用户位置
+      userLocation: {
+        latitude: 42,
+        longitude: 113,
+        desc: {
+          address: "郑州市郑东新区会展中心",
+        },
+      }, // 用户位置
       locating: false, // 正在定位用户位置
       shops: [],
+      shopsLoaded: false,
       showUploadDialog: false,
       uploadForm: {
         name: "",
@@ -140,10 +148,24 @@ export default {
       if (!this.userLocation) {
         return "点击获取定位";
       }
-      return this.userLocation.longitude + ", " + this.userLocation.latitude;
+      return this.userLocation.desc.address;
+    },
+  },
+  watch: {
+    userLocation: {
+      async handler(userLocation) {
+        localStorage.setItem("zd_user_location", JSON.stringify(userLocation));
+        this.refreshShops();
+      },
+      deep: true,
     },
   },
   async created() {
+    // 从本地缓存加载用户位置
+    const userLocationJson = localStorage.getItem("zd_user_location");
+    if (userLocationJson) {
+      this.userLocation = JSON.parse(userLocationJson);
+    }
     this.refreshShops();
   },
   methods: {
@@ -171,8 +193,20 @@ export default {
         fileList.forEach((file, index) => {
           shops[index].logo = file.tempFileURL;
         });
+        // 计算位置
+        shops.forEach((shop) => {
+          shop.distance = TMap.geometry.computeDistance([
+            new TMap.LatLng(
+              this.userLocation.latitude,
+              this.userLocation.longitude
+            ),
+            new TMap.LatLng(shop.position.latitude, shop.position.longitude),
+          ]);
+        });
         this.shops = shops;
+        this.shopsLoaded = true;
       } catch (error) {
+        console.error(error);
         this.$notify({
           message: error.message,
           type: "error",
@@ -191,9 +225,14 @@ export default {
         return;
       }
 
-      function success(position) {
+      async function success(position) {
+        const userLocation = position.coords;
+        const res = await fetch(
+          `https://apis.map.qq.com/ws/geocoder/v1/?key=RFGBZ-IMPLX-BVW4P-TOS7W-77DQ7-BIBTD&location=${userLocation.latitude},${userLocation.longitude}`
+        );
+        userLocation.desc = await res.json();
+        _this.userLocation = userLocation;
         _this.locating = false;
-        _this.userLocation = position.coords;
       }
 
       function error() {
@@ -290,6 +329,12 @@ export default {
   align-items: center;
   justify-content: space-between;
 }
+.empty {
+  text-align: center;
+  margin: 50px 0;
+  color: gray;
+  font-size: 14px;
+}
 .shop {
   display: flex;
   align-items: center;
@@ -309,6 +354,10 @@ export default {
 }
 .shop-name {
   font-size: 18px;
+}
+.map {
+  width: 300px;
+  height: 300px;
 }
 </style>
 <style>

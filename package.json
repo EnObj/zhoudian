@@ -34,6 +34,9 @@
       "plugin:vue/essential",
       "eslint:recommended"
     ],
+    "globals": {
+      "TMap": true
+    },
     "parserOptions": {
       "parser": "babel-eslint"
     },
