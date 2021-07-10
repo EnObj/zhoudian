@@ -1,27 +1,19 @@
 <template>
   <div class="shop" v-if="shop">
-    <div class="shop-header">
-      <el-page-header
-        @back="$router.back()"
-        :content="shop.name"
-      ></el-page-header>
-      <div class="shop-logo">
-        <img :src="shop.logo" alt="封面" class="shop-logo-image" />
-      </div>
-    </div>
+    <el-page-header
+      @back="$router.back()"
+      :content="shop.name"
+      class="page-header"
+    ></el-page-header>
     <div class="shop-details">
-      <div
-        class="shop-detail"
-        v-for="(detail, index) in shop.details"
-        :key="detail"
-      >
+      <div class="shop-detail" v-for="detail in logoAndDetails" :key="detail">
         <el-image
-          style="max-width: 90%;"
+          class="detail-image"
           :src="detail"
-          :preview-src-list="shop.details"
+          :preview-src-list="logoAndDetails"
+          fit="cover"
         >
         </el-image>
-        <div class="img-index">附图.{{ index + 1 }}/{{ shop.details.length }}</div>
       </div>
     </div>
   </div>
@@ -37,6 +29,14 @@ export default {
     return {
       shop: null,
     };
+  },
+  computed: {
+    logoAndDetails() {
+      if (this.shop) {
+        return [this.shop.logo, ...this.shop.details];
+      }
+      return [];
+    },
   },
   async created() {
     const loading = this.$loading();
@@ -69,10 +69,13 @@ export default {
 };
 </script>
 <style scoped>
+.page-header {
+  margin: 15px 0;
+}
 .shop-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  margin: 15px 0;
 }
 .shop-logo-image {
   width: 50px;
@@ -86,15 +89,20 @@ export default {
   margin-left: 10px;
 }
 .shop-details {
-  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-gap: 10px;
 }
-.shop-detail {
-  text-align: center;
-  margin-bottom: 15px;
+.shop-detail{
+  position: relative;
+  padding: 50%;
 }
-.img-index {
-  margin-top: 10px;
-  color: gray;
-  font-size: 12px;
+.detail-image{
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 </style>
