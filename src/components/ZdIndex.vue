@@ -8,7 +8,7 @@
         }}</el-button>
         <el-button
           type="primary"
-          icon="el-icon-plus"
+          icon="el-icon-circle-plus"
           @click="newShop"
           size="small"
           :disabled="!userLocation || locating"
@@ -86,6 +86,7 @@
             :on-success="handleDetailSuccess"
             :http-request="uploadImg"
             :limit="10"
+            ref="uploadDetails"
           >
             <i class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
@@ -336,7 +337,18 @@ export default {
             this.userLocation.latitude
           ),
         });
+        // 关闭弹窗
         this.showUploadDialog = false;
+        // 清空表单
+        this.uploadForm = {
+          name: "",
+          logo: "",
+          details: [],
+        };
+        this.uploadFormTemp = {
+          logo: "",
+        };
+        this.$refs.uploadDetails.clearFiles();
         this.refreshShops();
       } catch (error) {
         this.$notify({
@@ -436,7 +448,7 @@ export default {
   height: 58px;
   line-height: 58px;
 }
-.el-upload-list--picture-card .el-upload-list__item{
+.el-upload-list--picture-card .el-upload-list__item {
   width: 58px;
   height: 58px;
 }

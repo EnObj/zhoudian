@@ -1,8 +1,12 @@
 <template>
   <div id="app">
-    <keep-alive include="ZdIndex">
-      <router-view></router-view>
-    </keep-alive>
+    <el-row type="flex" justify="space-around">
+      <el-col :xs="24" :sm="20" :md="16" :lg="12">
+        <keep-alive include="ZdIndex">
+          <router-view></router-view>
+        </keep-alive>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
