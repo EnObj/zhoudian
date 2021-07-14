@@ -1,10 +1,9 @@
 <template>
   <div class="shop" v-if="shop">
-    <el-page-header
-      @back="$router.back()"
-      :content="shop.name"
-      class="page-header"
-    ></el-page-header>
+    <el-breadcrumb separator-class="el-icon-arrow-right" class="page-header">
+      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+      <el-breadcrumb-item>{{ shop.name }}</el-breadcrumb-item>
+    </el-breadcrumb>
     <div class="shop-details">
       <div class="shop-detail" v-for="detail in logoAndDetails" :key="detail">
         <el-image
@@ -87,7 +86,7 @@ export default {
       loading.close();
     }
     // 获取用户位置
-    const defaultUserLocation = "{}";
+    const defaultUserLocation = {};
     const userLocation = JSON.parse(
       localStorage.getItem("zd_user_location") ||
         JSON.stringify(defaultUserLocation)

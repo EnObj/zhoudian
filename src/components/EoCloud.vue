@@ -1,6 +1,9 @@
 <template>
   <div class="hello-world">
-    <h1>上云</h1>
+    <el-breadcrumb separator-class="el-icon-arrow-right" class="page-header">
+      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+      <el-breadcrumb-item>账户</el-breadcrumb-item>
+    </el-breadcrumb>
     <div class="user">
       <div class="user-icon">
         <img :src="require('../assets/' + userIcon)" alt="头像" />
@@ -361,9 +364,13 @@ export default {
       this.setEmailLoading = true;
       try {
         // 更新用户名（sdk bug，不调用这一步会报用户不存在）
-        await this.cloudAuth.currentUser.updateUsername(this.cloudAuth.currentUser.uid);
+        await this.cloudAuth.currentUser.updateUsername(
+          this.cloudAuth.currentUser.uid
+        );
         // 更新用户密码
-        await this.cloudAuth.currentUser.updatePassword(this.setEmailForm.password);
+        await this.cloudAuth.currentUser.updatePassword(
+          this.setEmailForm.password
+        );
         // 更新邮箱
         await this.cloudAuth.currentUser.updateEmail(this.setEmailForm.email);
         // 关闭弹窗
@@ -421,7 +428,9 @@ export default {
       this.resetPasswordLoading = true;
       try {
         // 更新邮箱
-        await this.cloudAuth.sendPasswordResetEmail(this.resetPasswordForm.email);
+        await this.cloudAuth.sendPasswordResetEmail(
+          this.resetPasswordForm.email
+        );
         // 关闭弹窗
         this.showResetPasswordDialog = false;
         this.$notify({
@@ -452,5 +461,8 @@ export default {
 }
 .action {
   margin: 20px 0;
+}
+.page-header {
+  margin: 15px 0;
 }
 </style>
