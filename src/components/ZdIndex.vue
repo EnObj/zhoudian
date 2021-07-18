@@ -179,6 +179,9 @@ export default {
   },
   computed: {
     userLocationDisplay() {
+      if (this.locating) {
+        return "正在获取您的位置...";
+      }
       if (!this.userLocation) {
         return "点击获取定位";
       }
@@ -245,7 +248,11 @@ export default {
     }
     // 位置为空，请求用户授权位置
     if (!this.userLocation) {
-      this.geoFindMe();
+      try {
+        this.userLocation = await this.geoFindMe();
+      } catch (error) {
+        console.error(error);
+      }
     }
   },
   methods: {
@@ -430,7 +437,12 @@ export default {
       this.$nextTick(function() {
         if (!this.map) {
           this.map = new TMap.Map("tmap", {
-            center: new TMap.LatLng(39.98412, 116.307484), //设置地图中心点坐标
+            center: this.userLocation
+              ? new TMap.LatLng(
+                  this.userLocation.latitude || 39.98412,
+                  this.userLocation.longitude || 116.307484
+                )
+              : new TMap.LatLng(39.98412, 116.307484), //设置地图中心点坐标
             zoom: 11, //设置地图缩放级别
             viewMode: "2D",
           });
