@@ -198,7 +198,7 @@ export default {
         return "正在获取位置信息";
       }
       if (!this.userLocationTemp) {
-        return "tip：轻触地图选则位置";
+        return "tip：轻触地图选择一个位置";
       }
       return this.userLocationTemp.address;
     },
@@ -236,7 +236,10 @@ export default {
   },
   async created() {
     if (localStorage.getItem("zd_user_location")) {
-      this.userLocation = JSON.parse(localStorage.getItem("zd_user_location"));
+      const userLocation = JSON.parse(localStorage.getItem("zd_user_location"));
+      if (userLocation.latitude && userLocation.longitude) {
+        this.userLocation = userLocation;
+      }
     }
     // 位置为空，请求用户授权位置
     if (!this.userLocation) {
@@ -322,8 +325,12 @@ export default {
         }
 
         function success(position) {
+          console.log(position);
           _this.locating = false;
-          const userLocation = { ...position.coords };
+          const userLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
           resolve(userLocation);
         }
 
@@ -483,6 +490,7 @@ export default {
       try {
         // 异步获取用户授权位置
         const userLocation = await this.geoFindMe();
+        console.log(userLocation);
         // 设置地图中心点
         this.map.setCenter(
           new TMap.LatLng(userLocation.latitude, userLocation.longitude)
