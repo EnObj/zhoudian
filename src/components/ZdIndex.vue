@@ -3,9 +3,13 @@
     <div class="header">
       <h1>周店</h1>
       <div>
-        <el-button type="text" icon="el-icon-position" @click="geoFindMe">{{
-          userLocationDisplay
-        }}</el-button>
+        <el-button
+          type="text"
+          v-show="!showGetLocationDialog"
+          icon="el-icon-position"
+          @click="getUserLocation"
+          >{{ userLocationDisplay }}</el-button
+        >
         <el-button
           type="primary"
           icon="el-icon-circle-plus"
@@ -57,9 +61,12 @@
           </el-input>
         </el-form-item>
         <el-form-item label="位置">
-          <el-button type="text" icon="el-icon-position" @click="geoFindMe">{{
-            userLocationDisplay
-          }}</el-button>
+          <el-button
+            type="text"
+            icon="el-icon-position"
+            @click="getUserLocation"
+            >{{ userLocationDisplay }}</el-button
+          >
         </el-form-item>
         <el-form-item label="门头" prop="logo">
           <el-upload
@@ -102,6 +109,31 @@
         </el-form-item>
       </el-form>
     </el-dialog>
+
+    <el-dialog
+      title="获取位置"
+      :visible.sync="showGetLocationDialog"
+      width="350px"
+    >
+      <div id="tmap"></div>
+      <div class="map-action">
+        <div>
+          {{ userLocationTempDisplay }}
+        </div>
+        <div class="">
+          <el-button
+            type="primary"
+            v-on:click="
+              userLocation = userLocationTemp;
+              userLocationTemp = null;
+              showGetLocationDialog = false;
+            "
+          >
+            确认
+          </el-button>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -112,7 +144,9 @@ export default {
   data() {
     return {
       userLocation: null, // 用户位置
+      userLocationTemp: null, // 地图选择待确认
       locating: false, // 正在定位用户位置
+      locationTranslate: false, // 正在翻译位置信息
       shops: [],
       shopsLoaded: false,
       moreShops: false,
@@ -140,27 +174,58 @@ export default {
         logo: "",
       },
       submitLoading: false,
+      showGetLocationDialog: false, // 显示地图dialog
     };
   },
   computed: {
     userLocationDisplay() {
-      if (this.locating) {
-        return "定位中...";
-      }
       if (!this.userLocation) {
         return "点击获取定位";
       }
       return this.userLocation.address;
     },
+    userLocationTempDisplay() {
+      if (this.locating) {
+        return "正在获取您的位置...";
+      }
+      if (this.locationTranslate) {
+        return "正在获取位置信息";
+      }
+      if (!this.userLocationTemp) {
+        return "tip：轻触地图选则位置";
+      }
+      return this.userLocationTemp.address;
+    },
   },
   watch: {
     userLocation: {
       async handler(userLocation) {
-        console.log(userLocation);
+        // 用户地址放入本地缓存
         localStorage.setItem("zd_user_location", JSON.stringify(userLocation));
         this.refreshShops();
       },
       deep: true,
+    },
+    async "userLocationTemp.address"(address) {
+      if (!address && this.userLocationTemp) {
+        this.locationTranslate = true;
+        const userLocation = this.userLocationTemp;
+        try {
+          const res = await fetch(
+            `https://service-f1b28zc3-1252108641.sh.apigw.tencentcs.com/release/geo-to-city?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`
+          );
+          const { data } = await res.json();
+          userLocation.address = data.result.address;
+        } catch (error) {
+          console.error(error);
+          this.$notify({
+            message: error.message,
+            type: "error",
+          });
+        } finally {
+          this.locationTranslate = false;
+        }
+      }
     },
   },
   async created() {
@@ -184,6 +249,8 @@ export default {
     }
   },
   methods: {
+    // 获取地址中文名
+
     // 刷新门店列表
     async refreshShops(pagedShops = []) {
       const loading = this.$loading();
@@ -246,45 +313,34 @@ export default {
     },
     geoFindMe() {
       const _this = this;
-      if (!navigator.geolocation) {
-        this.$notify({
-          message: "您的浏览器不支持地理位置",
-          type: "warning",
-        });
-        return;
-      }
+      return new Promise(function(resolve, reject) {
+        if (!navigator.geolocation) {
+          this.$notify({
+            message: "您的浏览器不支持地理位置",
+            type: "warning",
+          });
+          return reject();
+        }
 
-      async function success(position) {
-        const userLocation = position.coords;
-        try {
-          const res = await fetch(
-            `https://service-f1b28zc3-1252108641.sh.apigw.tencentcs.com/release/geo-to-city?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`
-          );
-          const { data } = await res.json();
-          userLocation.address = data.result.address;
-          _this.userLocation = userLocation;
-        } catch (error) {
-          console.error(error);
+        function success(position) {
+          _this.locating = false;
+          const userLocation = { ...position.coords };
+          resolve(userLocation);
+        }
+
+        function error() {
+          _this.locating = false;
           _this.$notify({
-            message: error.message,
+            message: "无法获取您的位置",
             type: "error",
           });
-        } finally {
-          _this.locating = false;
+          reject();
         }
-      }
 
-      function error() {
-        _this.locating = false;
-        _this.$notify({
-          message: "无法获取您的位置",
-          type: "error",
-        });
-      }
+        _this.locating = true;
 
-      this.locating = true;
-
-      navigator.geolocation.getCurrentPosition(success, error);
+        navigator.geolocation.getCurrentPosition(success, error);
+      });
     },
     newShop() {
       this.showUploadDialog = true;
@@ -369,6 +425,62 @@ export default {
         });
       });
     },
+    getUserLocation() {
+      this.showGetLocationDialog = true;
+      this.$nextTick(function() {
+        if (!this.map) {
+          this.map = new TMap.Map("tmap", {
+            center: new TMap.LatLng(39.98412, 116.307484), //设置地图中心点坐标
+            zoom: 11, //设置地图缩放级别
+            viewMode: "2D",
+          });
+          //初始化marker图层
+          this.markerLayer = new TMap.MultiMarker({
+            id: "marker-layer",
+            map: this.map,
+          });
+          // 绑定点击事件，拾取用户选中的地图坐标
+          this.map.on(
+            "click",
+            function(evt) {
+              const latitude = +evt.latLng.getLat().toFixed(6);
+              const longitude = +evt.latLng.getLng().toFixed(6);
+              console.log(evt);
+              this.markUserLocation({
+                latitude,
+                longitude,
+                address: (evt.poi && evt.poi.name) || "",
+              });
+            }.bind(this)
+          );
+        }
+        // 异步获取用户授权位置
+        this.geoFindMe().then(function(userLocation) {
+          // 设置地图中心点
+          this.map.setCenter(
+            new TMap.LatLng(userLocation.latitude, userLocation.longitude)
+          );
+          // 标记暂存位置
+          this.markUserLocation(userLocation);
+        });
+      });
+    },
+    // 标记用户位置
+    async markUserLocation(userLocationTemp) {
+      // 先删除已有点标记
+      this.markerLayer.remove(
+        this.markerLayer.getGeometries().map((item) => {
+          return item.id;
+        })
+      );
+      this.markerLayer.add({
+        position: new TMap.LatLng(
+          userLocationTemp.latitude,
+          userLocationTemp.longitude
+        ),
+      });
+      this.userLocationTemp = userLocationTemp;
+    },
   },
 };
 </script>
@@ -451,5 +563,14 @@ export default {
 .el-upload-list--picture-card .el-upload-list__item {
   width: 58px;
   height: 58px;
+}
+#tmap {
+  height: 300px;
+}
+.map-action {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>
