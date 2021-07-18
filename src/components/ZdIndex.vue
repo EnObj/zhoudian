@@ -165,12 +165,12 @@ export default {
   },
   async created() {
     // 从本地缓存加载用户位置
-    const defaultUserLocation = {
-      latitude: 42,
-      longitude: 113,
-      address: "郑州是金水区杨金路",
-    };
-    // const defaultUserLocation = {};
+    // const defaultUserLocation = {
+    //   latitude: 42,
+    //   longitude: 113,
+    //   address: "郑州市金水区杨金路",
+    // };
+    const defaultUserLocation = {};
     const userLocation = JSON.parse(
       localStorage.getItem("zd_user_location") ||
         JSON.stringify(defaultUserLocation)
