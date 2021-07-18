@@ -120,7 +120,10 @@
         <div>
           {{ userLocationTempDisplay }}
         </div>
-        <div class="">
+        <div>
+          <el-button type="text" v-on:click="locationToMe" v-show="!locating">
+            定位
+          </el-button>
           <el-button
             type="primary"
             v-on:click="
@@ -232,25 +235,18 @@ export default {
     },
   },
   async created() {
-    // 从本地缓存加载用户位置
-    // const defaultUserLocation = {
-    //   latitude: 42,
-    //   longitude: 113,
-    //   address: "郑州市金水区杨金路",
-    // };
-    const defaultUserLocation = {};
-    const userLocation = JSON.parse(
-      localStorage.getItem("zd_user_location") ||
-        JSON.stringify(defaultUserLocation)
-    );
-    if (userLocation.latitude && userLocation.longitude) {
-      this.userLocation = userLocation;
+    if (localStorage.getItem("zd_user_location")) {
+      this.userLocation = JSON.parse(localStorage.getItem("zd_user_location"));
     }
     // 位置为空，请求用户授权位置
     if (!this.userLocation) {
       try {
         this.userLocation = await this.geoFindMe();
       } catch (error) {
+        this.$notify({
+          message: error,
+          type: "error",
+        });
         console.error(error);
       }
     }
@@ -322,11 +318,7 @@ export default {
       const _this = this;
       return new Promise(function(resolve, reject) {
         if (!navigator.geolocation) {
-          this.$notify({
-            message: "您的浏览器不支持地理位置",
-            type: "warning",
-          });
-          return reject();
+          return reject("您的浏览器不支持地理位置");
         }
 
         function success(position) {
@@ -337,11 +329,7 @@ export default {
 
         function error() {
           _this.locating = false;
-          _this.$notify({
-            message: "无法获取您的位置",
-            type: "error",
-          });
-          reject();
+          reject("无法获取您的位置");
         }
 
         _this.locating = true;
@@ -437,12 +425,7 @@ export default {
       this.$nextTick(function() {
         if (!this.map) {
           this.map = new TMap.Map("tmap", {
-            center: this.userLocation
-              ? new TMap.LatLng(
-                  this.userLocation.latitude || 39.98412,
-                  this.userLocation.longitude || 116.307484
-                )
-              : new TMap.LatLng(39.98412, 116.307484), //设置地图中心点坐标
+            center: new TMap.LatLng(39.98412, 116.307484), //设置地图中心点坐标
             zoom: 11, //设置地图缩放级别
             viewMode: "2D",
           });
@@ -466,15 +449,17 @@ export default {
             }.bind(this)
           );
         }
-        // 异步获取用户授权位置
-        this.geoFindMe().then(function(userLocation) {
+        // 如果有用户位置，则标记到地图上
+        if (this.userLocation) {
           // 设置地图中心点
           this.map.setCenter(
-            new TMap.LatLng(userLocation.latitude, userLocation.longitude)
+            new TMap.LatLng(
+              this.userLocation.latitude,
+              this.userLocation.longitude
+            )
           );
-          // 标记暂存位置
-          this.markUserLocation(userLocation);
-        });
+          this.markUserLocation(this.userLocation);
+        }
       });
     },
     // 标记用户位置
@@ -492,6 +477,25 @@ export default {
         ),
       });
       this.userLocationTemp = userLocationTemp;
+    },
+    // 定位到地图上
+    async locationToMe() {
+      try {
+        // 异步获取用户授权位置
+        const userLocation = await this.geoFindMe();
+        // 设置地图中心点
+        this.map.setCenter(
+          new TMap.LatLng(userLocation.latitude, userLocation.longitude)
+        );
+        // 标记暂存位置
+        this.markUserLocation(userLocation);
+      } catch (error) {
+        this.$notify({
+          message: error,
+          type: "error",
+        });
+        console.error(error);
+      }
     },
   },
 };
